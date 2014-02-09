@@ -30,7 +30,7 @@ end
 
 # read line
 def read
-  cmd = Readline.readline("> ", true)
+  Readline.readline("> ", true).strip
 end
 
 def ev cmd
@@ -87,7 +87,7 @@ start_instruments
 loop {
   cmd = read
   if cmd
-    ev cmd
+    ev cmd unless cmd.empty?
   else
     puts
     break
