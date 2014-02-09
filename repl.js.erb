@@ -1,0 +1,53 @@
+var target = UIATarget.localTarget(), host = target.host();
+
+target.setTimeout(0);
+
+var args = ["sink.rb", "<%= drb_address %>"];
+var running = true;
+
+
+var runCmd = function(action, result) {
+    try {
+        UIALogger.logMessage(args.concat([action, result || ""]));
+        var process = host.performTaskWithPathArgumentsTimeout("/usr/bin/ruby",
+                                                               args.concat([action, result || ""]),
+                                                               2);
+        if (process.exitCode != 0) {
+            UIALogger.logMessage("unable to execute " + args + " exitCode " + process.exitCode + ". Error: " + process.stderr);
+            running = false;
+        }
+        return process.stdout;
+    } catch (e) {
+        UIALogger.logMessage("Timeout on sink executing '"+action+"':" + e);
+        target.delay(0.1);
+    }
+    return null;
+};
+
+var request = function() {
+    return runCmd("request");
+};
+
+var respond = function(result) {
+    if (result == null) {
+        result = "null";
+    } else if (result == undefined) {
+        result = "undefined";
+    }
+    runCmd("respond", result.toString());
+};
+
+while (running) {
+    var command = request();
+    if (!!command) {
+        if (command.replace(/\s/, "").length > 0) {
+            try {
+                var result = eval(command);
+                respond(result);
+            } catch (err) {
+                respond(err.toString());
+                continue;
+            }
+        }
+    }
+}
