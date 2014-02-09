@@ -33,6 +33,7 @@ def read
   Readline.readline("> ", true).strip
 end
 
+# eval isn't really a good name for a method...
 def ev cmd
   SERVER.request cmd
 end
@@ -61,7 +62,7 @@ class Server
   end
 
   def respond response
-    puts response
+    puts " => #{response}"
     @thread.wakeup
   end
 
