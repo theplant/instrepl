@@ -1,6 +1,7 @@
 require "drb"
 require "erb"
 require "readline"
+require "timeout"
 
 def instruments_script
   File.expand_path "repl.out.js"
@@ -44,10 +45,15 @@ class Server
     @queue = []
     @thread = Thread.current
   end
-  
+
   def request cmd
     @queue.push cmd
-    Thread.stop
+    Timeout.timeout(10) do
+      @thread = Thread.current
+      Thread.stop
+    end
+  rescue Timeout::Error
+    puts "Timeout waiting for response from instruments."
   end
 
   def pop_command
@@ -58,7 +64,7 @@ class Server
     puts response
     @thread.wakeup
   end
-  
+
   def start drb_address
     DRb.start_service(drb_address, self)
   end
@@ -78,7 +84,7 @@ SERVER = Server.new
 generate_scriptfile
 SERVER.start drb_address
 start_instruments
-loop { 
+loop {
   cmd = read
   if cmd
     ev cmd
