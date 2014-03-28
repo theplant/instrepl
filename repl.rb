@@ -46,7 +46,8 @@ end
 
 # read line
 def read
-  Readline.readline("> ", true).strip
+  line = Readline.readline("> ", true)
+  line && line.strip
 end
 
 # eval isn't really a good name for a method...
