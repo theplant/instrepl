@@ -3,6 +3,8 @@ require "erb"
 require "readline"
 require "timeout"
 
+require "childprocess"
+
 def instruments_script
   File.expand_path "repl.out.js"
 end
@@ -20,12 +22,26 @@ def generate_scriptfile
   File.write(instruments_script, result)
 end
 
-
 # start instruments
-def start_instruments
-  cmd = %|/Applications/Xcode.app/Contents/Developer/usr/bin/instruments -D /Users/bodhi/Code/work/theplant/QortexiOS/integration/tmp/trace -t /Applications/Xcode.app/Contents/Applications/Instruments.app/Contents/PlugIns/AutomationInstrument.bundle/Contents/Resources/Automation.tracetemplate "/Users/bodhi/Code/work/theplant/QortexiOS/build/iphonesimulator/Qortex (Dev).app" -v -e UIASCRIPT #{instruments_script} -e UIARESULTSPATH /Users/bodhi/Code/work/theplant/QortexiOS/integration/tmp/results|
-        # do it manually
-        puts cmd
+def start_instruments app_path
+  cmd = ["instruments", "-t",
+         "/Applications/Xcode.app/Contents/Applications/Instruments.app/Contents/PlugIns/AutomationInstrument.bundle/Contents/Resources/Automation.tracetemplate",
+         app_path, "-e", "UIARESULTSPATH", ".", "-e", "UIASCRIPT", instruments_script]
+
+  process = ChildProcess.build(*cmd)
+  process.io.inherit!
+  at_exit {
+    SERVER.request ":quit"
+    begin
+      process.poll_for_exit(10)
+    rescue ChildProcess::TimeoutError
+      process.stop # tries increasingly harsher methods to kill the process.
+    end
+
+  }
+  process.start
+
+
 end
 
 # read line
@@ -49,12 +65,16 @@ class Server
 
   def request cmd
     @queue.push cmd
-    Timeout.timeout(10) do
+    wait_for_response
+  rescue Timeout::Error
+    puts "Timeout waiting for response from instruments."
+  end
+
+  def wait_for_response timeout = 10
+    Timeout.timeout(timeout) do
       @thread = Thread.current
       Thread.stop
     end
-  rescue Timeout::Error
-    puts "Timeout waiting for response from instruments."
   end
 
   def pop_command
@@ -83,8 +103,12 @@ SERVER = Server.new
 
 
 generate_scriptfile
+puts "Starting DRb server..."
 SERVER.start drb_address
-start_instruments
+puts "Starting instruments..."
+start_instruments ARGV[0]
+SERVER.wait_for_response 20
+puts "Starting REPL..."
 loop {
   cmd = read
   if cmd

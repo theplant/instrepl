@@ -37,6 +37,7 @@ var respond = function(result) {
     runCmd("respond", result.toString());
 };
 
+respond("running");
 while (running) {
     var command = request();
     if (!!command) {
