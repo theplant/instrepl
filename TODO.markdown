@@ -10,3 +10,5 @@
 * Write JS outfile to tmp file, and unlink file when server is up and
   running
 
+* Refactor instruments JS file to reduce surface of adapter (push all
+  code into something like a `_repl` object).
