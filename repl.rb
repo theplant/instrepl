@@ -23,13 +23,15 @@ def generate_scriptfile
 end
 
 # start instruments
-def start_instruments app_path
+def start_instruments app_path, device
   cmd = ["instruments", "-t",
-         "/Applications/Xcode.app/Contents/Applications/Instruments.app/Contents/PlugIns/AutomationInstrument.bundle/Contents/Resources/Automation.tracetemplate",
+         "/Applications/Xcode.app/Contents/Applications/Instruments.app/Contents/PlugIns/AutomationInstrument.xrplugin/Contents/Resources/Automation.tracetemplate",
+         "-w", device,
          app_path, "-e", "UIARESULTSPATH", ".", "-e", "UIASCRIPT", instruments_script]
 
   process = ChildProcess.build(*cmd)
-  process.io.inherit!
+  # process.io.inherit!
+  process.io.stderr = STDERR
   at_exit {
     SERVER.request ":quit"
     begin
@@ -107,7 +109,7 @@ generate_scriptfile
 puts "Starting DRb server..."
 SERVER.start drb_address
 puts "Starting instruments..."
-start_instruments ARGV[0]
+start_instruments ARGV[0], ARGV[1]
 SERVER.wait_for_response 20
 puts "Starting REPL..."
 loop {

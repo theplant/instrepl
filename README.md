@@ -3,10 +3,13 @@
 Running REPL:
 
 ```
-ruby repl.rb <path to your iOS.app>
+ruby repl.rb <path to your iOS.app> <device name>
 ```
 
 The REPL will start, and you can enter the same commands that you would enter in an Instruments UI Automation script.
+
+The easiest way I know of to find the full path to your iOS app (in simulator) is here: https://github.com/tue-savvy/SimulatorManager (doesn't quite find it, but gets you very close).
+You can find device names by typing `instruments -s` into your console.
 
 # What can I do with it
 
